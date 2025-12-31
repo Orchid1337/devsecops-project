@@ -1,0 +1,38 @@
+# Large files
+*.deb
+*.tar.gz
+*.zip
+
+# Reports
+reports/
+*.json
+*.html
+*.pdf
+
+# Docker
+*.tar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+*.env.local
+
+# Trivy cache
+.cache/
+
+# Temporary files
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
