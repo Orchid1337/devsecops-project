@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 1. GŁÓWNA APLIKACJA (celowo podatna)
+  nginx:
+    build: ./applications/nginx
+    ports:
+      - "8080:80"
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 2. APLIKACJA TESTOWA OWASP
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    ports:
+      - "3001:3000"
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 3. MONITORING - Prometheus (zmieniony port)
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    ports:
+      - "9091:9090"  # Zmienione z 9090 na 9091
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 4. MONITORING - Grafana (zmieniony port jeśli trzeba)
+  grafana:
+    image: grafana/grafana:9.5.2
+    ports:
+      - "3002:3000"  # Zmienione z 3000 na 3002
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # 5. BEZPIECZEŃSTWO - Trivy (uproszczony)
+  trivy:
+    image: aquasec/trivy:0.49.1
+    command: ["sleep", "infinity"]
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+networks:
+  devsecops-net:
+    driver: bridge

@@ -1,0 +1,66 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.IMAGE_NAME }}:test ./applications/nginx
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ env.IMAGE_NAME }}:test'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Check scan results
+      run: |
+        if [ -f trivy-results.sarif ]; then
+          echo "Scan completed. Report saved."
+        else
+          echo "Scan failed or no report generated."
+          exit 1
+        fi
+
+  build-and-test:
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Run container tests
+      run: |
+        docker build -t test-nginx ./applications/nginx
+        docker run --rm test-nginx nginx -t
+    
+    - name: Check Dockerfile security
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: ./applications/nginx/Dockerfile

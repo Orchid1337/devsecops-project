@@ -1,0 +1,82 @@
+# File managed by falcoctl
+# Changes will be overwritten
+
+# Falco supports reading rules from files and directories.
+# This file will be replaced with the one shipped with the rpm/deb package.
+
+# The rules_file/directory must exist and be readable.
+
+rules_file:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/falco_rules.local.yaml
+  - /etc/falco/k8s_audit_rules.yaml
+  - /etc/falco/rules.d
+
+# If true, the times displayed in log messages and output messages
+# will be in ISO 8601. By default, times are displayed in the local
+# time zone, as formatted by localtime(3).
+time_format_iso_8601: false
+
+# Whether to output events in json or text
+json_output: false
+
+# When using json output, whether to include the "output" field
+# (containing a friendly, human readable description of the event)
+# as a top-level json field.
+json_include_output_property: true
+
+# Send information logs to stderr and/or syslog Note: these settings
+# are independent of the grpc settings below.
+log_stderr: true
+log_syslog: true
+
+# Minimum log level to include in logs.
+# Note: these levels are separate from the priority field of rules.
+# This can be one of: "emergency", "alert", "critical", "error",
+# "warning", "notice", "info", "debug".
+log_level: info
+
+# Minimum rule priority level to load and run.
+# All rules with a priority above this level will be loaded/run.
+# This can be one of: "emergency", "alert", "critical", "error",
+# "warning", "notice", "info", "debug".
+priority: debug
+
+# Whether to buffer events for rules matching these conditions, and flush them
+# after all the conditions are satisfied (the inactivity_flush seconds are passed).
+buffered_outputs: false
+
+# The number of seconds to wait to flush the output buffer for the
+# buffered_outputs option.
+inactivity_flush_seconds: 1
+
+# Whether to daemonize the process.
+daemon: false
+
+# The hostname that will be used when submitting events to downstream
+# systems (e.g. Syslog, HTTP output)
+hostname: ""
+
+# All the following values will be passed to the programs (if specified)
+# using the environment variables in the form `FALCO_{uppercase_key}`
+# example: FALCO_OUTPUTS=...
+program_output:
+  enabled: false
+  keep_alive: false
+
+# gRPC server
+grpc:
+  enabled: true
+  bind_address: "0.0.0.0:5060"
+  threadiness: 8
+  private_key: "/etc/falco/certs/server.key"
+  cert_chain: "/etc/falco/certs/server.crt"
+  root_certs: "/etc/falco/certs/ca.crt"
+
+# gRPC output service
+grpc_output:
+  enabled: false
+
+# Enable/disable the time sync with the host.
+# This is needed when running Falco within a container.
+timeout: 200
