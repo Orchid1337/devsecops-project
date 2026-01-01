@@ -1,0 +1,75 @@
+name: Walidacja Projektu DevSecOps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  walidacja-struktury:
+    name: ✅ Walidacja struktury projektu
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Pobierz kod
+      uses: actions/checkout@v4
+    
+    - name: Sprawdź czy wymagane pliki istnieją
+      run: |
+        echo "🔍 Sprawdzam strukturę projektu..."
+        
+        WYMAGANE_PLIKI=(
+          "docker-compose.yaml"
+          "start.sh"
+          "scan.sh"
+          "README.md"
+          "applications/nginx/Dockerfile"
+          "applications/node-vuln-app/Dockerfile"
+          "applications/python-vuln-app/Dockerfile"
+          "applications/php-vuln-app/Dockerfile"
+          "applications/vulnerable-db/Dockerfile"
+        )
+        
+        wszystko_ok=true
+        for plik in "${WYMAGANE_PLIKI[@]}"; do
+          if [ -f "$plik" ]; then
+            echo "✅ $plik"
+          else
+            echo "❌ BRAK: $plik"
+            wszystko_ok=false
+          fi
+        done
+        
+        if [ "$wszystko_ok" = true ]; then
+          echo "🎉 Wszystkie wymagane pliki obecne!"
+        else
+          echo "::error::Walidacja struktury projektu nie powiodła się"
+          exit 1
+        fi
+    
+    - name: Generuj raport
+      run: |
+        echo "# Raport walidacji projektu" > RAPORT.md
+        echo "Data: $(date)" >> RAPORT.md
+        echo "Status: ✅ Wszystkie pliki obecne" >> RAPORT.md
+        echo "Projekt DevSecOps gotowy do użycia." >> RAPORT.md
+    
+    - name: Prześlij raport
+      uses: actions/upload-artifact@v4
+      with:
+        name: raport-walidacji
+        path: RAPORT.md
+  
+  koniec:
+    name: 📋 Zakończenie
+    runs-on: ubuntu-latest
+    needs: walidacja-struktury
+    
+    steps:
+    - name: Powiadomienie o sukcesie
+      run: |
+        echo "✅ PROJEKT DEVSECOPS ZWALIDOWANY POMYŚLNIE"
+        echo "Wszystkie wymagane pliki są obecne."
+        echo "Projekt gotowy do demonstracji."

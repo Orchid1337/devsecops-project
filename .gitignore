@@ -36,3 +36,22 @@ temp/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Raporty skanów (generowane lokalnie)
+reports/*.txt
+
+# Backup pliki
+*.backup
+backup*/
+
+# Cache i pliki tymczasowe
+.cache/
+tmp/
+*.tmp
+*.log
+*.swp
+
+# Pliki generowane przez pipeline
+RAPORT-*.md
+PODSUMOWANIE-*.md
+ANALIZA-*.md

@@ -1,0 +1,32 @@
+groups:
+  - name: security_alerts
+    rules:
+      - alert: CriticalVulnerabilitiesFound
+        expr: trivy_vulnerabilities_total{severity="CRITICAL"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Critical vulnerabilities detected"
+          description: "{{ $value }} critical vulnerabilities found in {{ $labels.image }}"
+      
+      - alert: HighVulnerabilityCount
+        expr: trivy_vulnerabilities_total{severity="HIGH"} > 10
+        for: 2m
+        labels:
+          severity: high
+          team: security
+        annotations:
+          summary: "High number of vulnerabilities"
+          description: "{{ $value }} high vulnerabilities found in {{ $labels.image }}"
+      
+      - alert: ScanFailed
+        expr: time() - trivy_last_scan_timestamp > 600
+        for: 1m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Trivy scan not running"
+          description: "No scan completed in last 10 minutes"

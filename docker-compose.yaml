@@ -19,36 +19,120 @@ services:
       - devsecops-net
     restart: unless-stopped
 
-  # 3. MONITORING - Prometheus (zmieniony port)
+  # 3. MONITORING - Prometheus
   prometheus:
     image: prom/prometheus:v2.45.0
     ports:
-      - "9091:9090"  # Zmienione z 9090 na 9091
+      - "9091:9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
     networks:
       - devsecops-net
     restart: unless-stopped
 
-  # 4. MONITORING - Grafana (zmieniony port jeśli trzeba)
+  # 4. MONITORING - Grafana
   grafana:
     image: grafana/grafana:9.5.2
     ports:
-      - "3002:3000"  # Zmienione z 3000 na 3002
+      - "3002:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - ./monitoring/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards/provisioned
+      - ./monitoring/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/all.yaml
     networks:
       - devsecops-net
     restart: unless-stopped
-    depends_on:
-      - prometheus
 
-  # 5. BEZPIECZEŃSTWO - Trivy (uproszczony)
+  # 5. LOGGING - Loki
+  loki:
+    image: grafana/loki:2.7.3
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 6. LOG COLLECTOR - Promtail
+  promtail:
+    image: grafana/promtail:2.7.3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./monitoring/promtail/promtail-config.yaml:/etc/promtail/config.yml
+      - ./reports:/reports
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 7. VULNERABLE NODE.JS APP
+  node-vuln-app:
+    build: ./applications/node-vuln-app
+    ports:
+      - "3003:3000"
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 8. VULNERABLE PYTHON/FLASK APP
+  python-vuln-app:
+    build: ./applications/python-vuln-app
+    ports:
+      - "5000:5000"
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 9. VULNERABLE DATABASE
+  vulnerable-db:
+    build: ./applications/vulnerable-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: vulnerable_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: insecure123
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 10. LEGACY PHP APPLICATION
+  php-vuln-app:
+    build: ./applications/php-vuln-app
+    ports:
+      - "8081:80"
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 11. TRIVY - NAPRAWIONA WERSJA
   trivy:
     image: aquasec/trivy:0.49.1
-    command: ["sleep", "infinity"]
+    command: ["sh", "-c", "while true; do sleep 3600; done"]
+    networks:
+      - devsecops-net
+    restart: unless-stopped
+
+  # 12. Eksporter metryk Trivy→Prometheus
+  trivy-exporter:
+    image: python:3.9-alpine
+    volumes:
+      - ./scanners/trivy-metrics-exporter.py:/app/exporter.py
+      - ./reports:/reports
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      sh -c "
+      pip install prometheus-client &&
+      python /app/exporter.py
+      "
+    ports:
+      - "8083:8000"
     networks:
       - devsecops-net
     restart: unless-stopped
