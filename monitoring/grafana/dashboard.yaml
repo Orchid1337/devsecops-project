@@ -4,10 +4,11 @@ providers:
   - name: 'default'
     orgId: 1
     folder: ''
+    folderUid: ''
     type: file
     disableDeletion: false
-    editable: true
     updateIntervalSeconds: 10
     allowUiUpdates: true
     options:
-      path: /etc/grafana/dashboards/provisioned
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false
