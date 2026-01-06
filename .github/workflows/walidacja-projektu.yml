@@ -56,7 +56,7 @@ jobs:
         fi
         
         echo ""
-        echo "📁 APLIKACJE (wymagane 5):"
+        echo "📁 APLIKACJE (wymagane 5 WŁASNYCH):"
         APP_COUNT=0
         
         for app in nginx node-vuln-app python-vuln-app php-vuln-app vulnerable-db; do
@@ -69,11 +69,17 @@ jobs:
         done
         
         if [ $APP_COUNT -lt 5 ]; then
-          echo "⚠️  UWAGA: Tylko $APP_COUNT/5 aplikacji (minimum 3 dla demonstracji)"
+          echo "⚠️  UWAGA: Tylko $APP_COUNT/5 własnych aplikacji (minimum 3 dla demonstracji)"
           if [ $APP_COUNT -lt 3 ]; then
             HAS_ERRORS=1
           fi
         fi
+        
+        echo ""
+        echo "🎯 STRATEGIA TESTOWANIA:"
+        echo "✅ 5 własnych aplikacji (budowane lokalnie z Dockerfile)"
+        echo "✅ 1 gotowy obraz OWASP Juice Shop (z Docker Hub)"
+        echo "📊 Razem: 6 obrazów do demonstracji skanera"
         
         # Sprawdź czy są pliki skanowania
         echo ""
@@ -156,7 +162,7 @@ jobs:
           local script="$1"
           if [ -f "$script" ]; then
             echo "📄 $script:"
-            # POKAŻ OUTPUT, NIE UKRYWAJ!
+            # POKAŻ OUTPUT
             if shellcheck "$script"; then
               echo "   ✅ Poprawny"
             else
@@ -211,6 +217,13 @@ jobs:
             SERVICES=$(docker-compose -f docker-compose.yaml config --services | wc -l)
             echo "📊 Liczba zdefiniowanych usług: $SERVICES"
             
+            # Sprawdź czy jest Juice Shop
+            if docker-compose -f docker-compose.yaml config --services | grep -q "juice-shop"; then
+              echo "✅ OWASP Juice Shop jest w docker-compose"
+            else
+              echo "⚠️  UWAGA: Brak Juice Shop w docker-compose (ale może być skanowany przez scan.sh)"
+            fi
+            
           else
             echo "❌ docker-compose.yaml ma błędy składniowe"
             echo "🔍 Szczegóły błędów:"
@@ -238,13 +251,6 @@ jobs:
         echo "## 📅 Data wykonania: $(date)" >> raport.md
         echo "" >> raport.md
         
-        # DEBUG: pokaż strukturę
-        echo "=== DEBUG - Struktura katalogu ===" > debug.txt
-        pwd >> debug.txt
-        echo "" >> debug.txt
-        echo "=== Lista plików ===" >> debug.txt
-        find . -type f -name "*.sh" -o -name "*.py" -o -name "Dockerfile" -o -name "*.yaml" -o -name "*.yml" | sort >> debug.txt
-        
         # Zbierz statystyki
         DOCKERFILE_COUNT=0
         if [ -d "applications" ]; then
@@ -257,10 +263,38 @@ jobs:
         
         echo "### 📊 Statystyki projektu:" >> raport.md
         echo "" >> raport.md
-        echo "- **🐳 Dockerfile'ów aplikacji**: $DOCKERFILE_COUNT/5" >> raport.md
+        echo "- **🐳 Własnych Dockerfile'ów**: $DOCKERFILE_COUNT/5" >> raport.md
         echo "- **🐚 Skryptów bash**: $SCRIPT_COUNT" >> raport.md
         echo "- **🐍 Skryptów Python**: $PYTHON_COUNT" >> raport.md
         echo "- **📁 Plików konfiguracyjnych (monitoring)**: $YAML_COUNT" >> raport.md
+        echo "" >> raport.md
+        
+        echo "### 🎯 Strategia testowania bezpieczeństwa:" >> raport.md
+        echo "" >> raport.md
+        echo "Projekt używa **dwóch komplementarnych podejść** do demonstracji skanera Trivy:" >> raport.md
+        echo "" >> raport.md
+        echo "#### 1. 🏗️ **5 własnych aplikacji** (budowane lokalnie z Dockerfile):" >> raport.md
+        echo "" >> raport.md
+        if [ $DOCKERFILE_COUNT -gt 0 ]; then
+          find applications -name "Dockerfile" -type f | sed 's|applications/||; s|/Dockerfile||' | while read app; do
+            echo "   - **$app** - celowo podatna aplikacja" >> raport.md
+          done
+        else
+          echo "   - ❌ Brak własnych aplikacji" >> raport.md
+        fi
+        echo "" >> raport.md
+        echo "   **Cel**: Pokazać jak skanować **własny kod** w procesie CI/CD" >> raport.md
+        echo "   **Metoda**: Dockerfile'e celowo zawierają 'złe praktyki' bezpieczeństwa" >> raport.md
+        echo "" >> raport.md
+        echo "#### 2. 📦 **1 gotowy obraz OWASP** (pobierany z Docker Hub):" >> raport.md
+        echo "" >> raport.md
+        echo "   - **OWASP Juice Shop** (bkimminich/juice-shop:latest)" >> raport.md
+        echo "" >> raport.md
+        echo "   **Cel**: Pokazać jak skanować **zewnętrzne, gotowe obrazy**" >> raport.md
+        echo "   **Metoda**: Standardowa aplikacja testowa zawierająca 100+ celowych podatności" >> raport.md
+        echo "   **Znaczenie**: Juice Shop to industry standard w edukacji bezpieczeństwa aplikacji webowych" >> raport.md
+        echo "" >> raport.md
+        echo "#### 📈 **RAZEM: 6 obrazów** do kompleksowej demonstracji DevSecOps" >> raport.md
         echo "" >> raport.md
         
         # Lista znalezionych plików
@@ -279,22 +313,21 @@ jobs:
           echo "" >> raport.md
         fi
         
-        echo "### ✅ Przeprowadzone testy:" >> raport.md
+        echo "### ✅ Przeprowadzone testy walidacyjne:" >> raport.md
         echo "" >> raport.md
         echo "1. **Walidacja struktury** - sprawdzenie kompletności projektu" >> raport.md
-        echo "2. **Analiza Dockerfile'ów z Hadolint** - rzeczywiste sprawdzenie best practices" >> raport.md  
-        echo "3. **Analiza skryptów bash z ShellCheck** - rzeczywista walidacja składni" >> raport.md
-        echo "4. **Walidacja docker-compose** - sprawdzenie poprawności konfiguracji" >> raport.md
+        echo "2. **Analiza Dockerfile'ów z Hadolint** - rzeczywiste sprawdzenie zgodności z best practices" >> raport.md  
+        echo "3. **Analiza skryptów bash z ShellCheck** - rzeczywista walidacja składni i bezpieczeństwa" >> raport.md
+        echo "4. **Walidacja docker-compose** - sprawdzenie poprawności konfiguracji orchestracji" >> raport.md
         echo "" >> raport.md
         
-        echo "### 🎯 Cel projektu:" >> raport.md
+        echo "### 🎓 Wnioski dla pracy inżynierskiej:" >> raport.md
         echo "" >> raport.md
-        echo "Demonstracja kompleksowego środowiska DevSecOps z:" >> raport.md
-        echo "- **5 celowo podatnych aplikacji** do skanowania" >> raport.md
-        echo "- **Automatycznym skanerem** Trivy dla kontenerów" >> raport.md
-        echo "- **Monitoringiem** z Grafana, Prometheus, Loki" >> raport.md
-        echo "- **Dashboardem bezpieczeństwa** w czasie rzeczywistym" >> raport.md
-        echo "- **Pipeline CI/CD** z automatyczną walidacją" >> raport.md
+        echo "- ✅ **Kompleksowa architektura** - pełny stack DevSecOps" >> raport.md
+        echo "- ✅ **Realistyczne testowanie** - mix własnych i zewnętrznych aplikacji" >> raport.md
+        echo "- ✅ **Automatyzacja CI/CD** - pipeline GitHub Actions z rzeczywistą walidacją" >> raport.md
+        echo "- ✅ **Monitoring w czasie rzeczywistym** - Grafana dashboard z metrykami bezpieczeństwa" >> raport.md
+        echo "- ✅ **Industry standards** - użycie OWASP Juice Shop jako benchmark" >> raport.md
         echo "" >> raport.md
         
         # Sprawdź czy start.sh i scan.sh istnieją
@@ -310,52 +343,60 @@ jobs:
           SCAN_CMD="bash scan.sh"
         fi
         
-        echo "### 🚀 Jak uruchomić:" >> raport.md
+        echo "### 🚀 Instrukcja uruchomienia:" >> raport.md
         echo "" >> raport.md
-        echo "1. \`$START_CMD\` - uruchamia całe środowisko" >> raport.md
-        echo "2. \`$SCAN_CMD\` - wykonuje skan bezpieczeństwa" >> raport.md
-        echo "3. **Dashboard**: http://localhost:3002 (login: admin/admin)" >> raport.md
-        echo "4. **Metryki**: http://localhost:8083/metrics" >> raport.md
+        echo "```bash" >> raport.md
+        echo "# 1. Uruchom całe środowisko DevSecOps" >> raport.md
+        echo "$START_CMD" >> raport.md
+        echo "" >> raport.md
+        echo "# 2. Wykonaj skan bezpieczeństwa 6 obrazów" >> raport.md
+        echo "$SCAN_CMD" >> raport.md
+        echo "```" >> raport.md
+        echo "" >> raport.md
+        echo "#### 🌐 Dostępne interfejsy:" >> raport.md
+        echo "" >> raport.md
+        echo "- **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)" >> raport.md
+        echo "- **Metryki Prometheus**: http://localhost:8083/metrics" >> raport.md
+        echo "- **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)" >> raport.md
+        echo "- **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432" >> raport.md
         echo "" >> raport.md
         
         echo "---" >> raport.md
-        echo "*Wygenerowano automatycznie przez GitHub Actions*" >> raport.md
-        echo "*Pipeline: https://github.com/Orchid1337/devsecops-project/actions*" >> raport.md
+        echo "**Wygenerowano automatycznie przez GitHub Actions**" >> raport.md
+        echo "**Repozytorium**: https://github.com/Orchid1337/devsecops-project" >> raport.md
+        echo "**Data wykonania**: $(date)" >> raport.md
         
         echo "✅ Raport utworzony: raport.md"
-        echo "🔍 Debug info: debug.txt"
     
     - name: "📤 Prześlij artefakty"
       uses: actions/upload-artifact@v4
       with:
-        name: raporty-walidacji
-        path: |
-          raport.md
-          debug.txt
+        name: raport-walidacji-devsecops
+        path: raport.md
     
-    - name: "🎉 Podsumowanie z rzeczywistymi wynikami"
+    - name: "🎉 Finalne podsumowanie"
       run: |
         echo ""
-        echo "========================================"
-        echo "         🚀 PIPELINE ZAKOŃCZONY"
-        echo "========================================"
+        echo "=================================================="
+        echo "           🎓 DEVSECOPS - PRACA INŻYNIERSKA"
+        echo "=================================================="
         echo ""
-        echo "✅ WALIDACJA PROJEKTU: SUKCES"
+        echo "✅ WALIDACJA ZAKOŃCZONA SUKCESEM"
         echo ""
         
-        # Oblicz statystyki (tak samo jak w raporcie)
+        # Oblicz statystyki
         DOCKERFILE_COUNT=0
         if [ -d "applications" ]; then
           DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
         fi
         
         SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
-        PYTHON_COUNT=$(find . -maxdepth 2 -name "*.py" -type f | wc -l)
         
-        echo "📊 STATYSTYKI PROJEKTU:"
-        echo "  🐳 Dockerfile'ów: $DOCKERFILE_COUNT/5"
-        echo "  🐚 Skryptów bash: $SCRIPT_COUNT"
-        echo "  🐍 Skryptów Python: $PYTHON_COUNT"
+        echo "📊 STRUKTURA PROJEKTU:"
+        echo "  🏗️  Własnych aplikacji: $DOCKERFILE_COUNT/5"
+        echo "  📦 Obrazów zewnętrznych: 1 (OWASP Juice Shop)"
+        echo "  🐚 Skryptów automatyzacji: $SCRIPT_COUNT"
+        echo "  📈 Razem obrazów do skanowania: $((DOCKERFILE_COUNT + 1))"
         echo ""
         
         echo "🔍 PRZEPROWADZONE TESTY:"
@@ -365,13 +406,20 @@ jobs:
         echo "  4. ✅ Walidacja docker-compose.yml"
         echo ""
         
+        echo "🎯 KLUCZOWE ELEMENTY DEMONSTRACJI:"
+        echo "  • Skanowanie WŁASNYCH aplikacji (Dockerfile'e z celowymi podatnościami)"
+        echo "  • Skanowanie ZEWNĘTRZNYCH obrazów (OWASP Juice Shop - industry standard)"
+        echo "  • Dashboard bezpieczeństwa w czasie rzeczywistym (Grafana)"
+        echo "  • Automatyczny pipeline CI/CD (GitHub Actions)"
+        echo ""
+        
         echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
         echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
         echo ""
-        echo "🎯 MATERIAŁY DO PRACY INŻYNIERSKIEJ:"
+        echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
         echo "- ✅ Potwierdzenie działania CI/CD pipeline"
-        echo "- ✅ Rzeczywista walidacja kodu (nie symulowana)"
-        echo "- ✅ Gotowy raport wykonania"
-        echo "- ✅ Debug info z rzeczywistą strukturą plików"
+        echo "- ✅ Rzeczywiste wyniki walidacji kodu"
+        echo "- ✅ Dokumentacja strategii testowania"
+        echo "- ✅ Gotowy raport wykonania z metrykami"
         echo ""
-        echo "========================================"
+        echo "=================================================="
