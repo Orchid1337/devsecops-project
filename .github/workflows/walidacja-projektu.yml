@@ -22,6 +22,10 @@ jobs:
         echo "Projekt DevSecOps - Praca Inżynierska"
         echo ""
         
+        # Debug - pokaż gdzie jesteśmy
+        echo "📂 Bieżący katalog: $(pwd)"
+        echo ""
+        
         # Flaga błędów
         HAS_ERRORS=0
         
@@ -152,7 +156,7 @@ jobs:
           local script="$1"
           if [ -f "$script" ]; then
             echo "📄 $script:"
-            # POKAŻ OUTPUT
+            # POKAŻ OUTPUT, NIE UKRYWAJ!
             if shellcheck "$script"; then
               echo "   ✅ Poprawny"
             else
@@ -224,6 +228,9 @@ jobs:
     needs: walidacja
     
     steps:
+    - name: "⬇️ Pobierz kod"
+      uses: actions/checkout@v4
+    
     - name: "📊 Utwórz raport z rzeczywistymi wynikami"
       run: |
         echo "# 📋 Raport Walidacji DevSecOps" > raport.md
@@ -231,17 +238,46 @@ jobs:
         echo "## 📅 Data wykonania: $(date)" >> raport.md
         echo "" >> raport.md
         
+        # DEBUG: pokaż strukturę
+        echo "=== DEBUG - Struktura katalogu ===" > debug.txt
+        pwd >> debug.txt
+        echo "" >> debug.txt
+        echo "=== Lista plików ===" >> debug.txt
+        find . -type f -name "*.sh" -o -name "*.py" -o -name "Dockerfile" -o -name "*.yaml" -o -name "*.yml" | sort >> debug.txt
+        
         # Zbierz statystyki
-        DOCKERFILE_COUNT=$(find applications -name "Dockerfile" 2>/dev/null | wc -l)
-        SCRIPT_COUNT=$(find . -maxdepth 1 -name "*.sh" 2>/dev/null | wc -l)
+        DOCKERFILE_COUNT=0
+        if [ -d "applications" ]; then
+          DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
+        fi
+        
+        SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
+        PYTHON_COUNT=$(find . -maxdepth 2 -name "*.py" -type f | wc -l)
+        YAML_COUNT=$(find monitoring -name "*.yaml" -o -name "*.yml" -type f 2>/dev/null | wc -l)
         
         echo "### 📊 Statystyki projektu:" >> raport.md
         echo "" >> raport.md
         echo "- **🐳 Dockerfile'ów aplikacji**: $DOCKERFILE_COUNT/5" >> raport.md
         echo "- **🐚 Skryptów bash**: $SCRIPT_COUNT" >> raport.md
-        echo "- **🐍 Skryptów Python**: $(find . -name "*.py" 2>/dev/null | wc -l)" >> raport.md
-        echo "- **📁 Plików konfiguracyjnych**: $(find monitoring -type f -name "*.yaml" -o -name "*.yml" 2>/dev/null | wc -l)" >> raport.md
+        echo "- **🐍 Skryptów Python**: $PYTHON_COUNT" >> raport.md
+        echo "- **📁 Plików konfiguracyjnych (monitoring)**: $YAML_COUNT" >> raport.md
         echo "" >> raport.md
+        
+        # Lista znalezionych plików
+        echo "### 📁 Znalezione pliki:" >> raport.md
+        echo "" >> raport.md
+        
+        if [ $DOCKERFILE_COUNT -gt 0 ]; then
+          echo "**Dockerfile'e:**" >> raport.md
+          find applications -name "Dockerfile" -type f | sed 's|^|  - |' >> raport.md
+          echo "" >> raport.md
+        fi
+        
+        if [ $SCRIPT_COUNT -gt 0 ]; then
+          echo "**Skrypty bash:**" >> raport.md
+          find . -maxdepth 2 -name "*.sh" -type f | sed 's|^|  - |' >> raport.md
+          echo "" >> raport.md
+        fi
         
         echo "### ✅ Przeprowadzone testy:" >> raport.md
         echo "" >> raport.md
@@ -261,10 +297,23 @@ jobs:
         echo "- **Pipeline CI/CD** z automatyczną walidacją" >> raport.md
         echo "" >> raport.md
         
+        # Sprawdź czy start.sh i scan.sh istnieją
+        if [ -f "start.sh" ]; then
+          START_CMD="./start.sh"
+        else
+          START_CMD="bash start.sh"
+        fi
+        
+        if [ -f "scan.sh" ]; then
+          SCAN_CMD="./scan.sh"
+        else
+          SCAN_CMD="bash scan.sh"
+        fi
+        
         echo "### 🚀 Jak uruchomić:" >> raport.md
         echo "" >> raport.md
-        echo "1. `./start.sh` - uruchamia całe środowisko" >> raport.md
-        echo "2. `./scan.sh` - wykonuje skan bezpieczeństwa" >> raport.md
+        echo "1. \`$START_CMD\` - uruchamia całe środowisko" >> raport.md
+        echo "2. \`$SCAN_CMD\` - wykonuje skan bezpieczeństwa" >> raport.md
         echo "3. **Dashboard**: http://localhost:3002 (login: admin/admin)" >> raport.md
         echo "4. **Metryki**: http://localhost:8083/metrics" >> raport.md
         echo "" >> raport.md
@@ -274,12 +323,15 @@ jobs:
         echo "*Pipeline: https://github.com/Orchid1337/devsecops-project/actions*" >> raport.md
         
         echo "✅ Raport utworzony: raport.md"
+        echo "🔍 Debug info: debug.txt"
     
-    - name: "📤 Prześlij artefakt"
+    - name: "📤 Prześlij artefakty"
       uses: actions/upload-artifact@v4
       with:
-        name: raport-devcsecops
-        path: raport.md
+        name: raporty-walidacji
+        path: |
+          raport.md
+          debug.txt
     
     - name: "🎉 Podsumowanie z rzeczywistymi wynikami"
       run: |
@@ -291,11 +343,19 @@ jobs:
         echo "✅ WALIDACJA PROJEKTU: SUKCES"
         echo ""
         
-        # Pokaż statystyki
+        # Oblicz statystyki (tak samo jak w raporcie)
+        DOCKERFILE_COUNT=0
+        if [ -d "applications" ]; then
+          DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
+        fi
+        
+        SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
+        PYTHON_COUNT=$(find . -maxdepth 2 -name "*.py" -type f | wc -l)
+        
         echo "📊 STATYSTYKI PROJEKTU:"
-        echo "  🐳 Dockerfile'ów: $(find applications -name "Dockerfile" 2>/dev/null | wc -l)/5"
-        echo "  🐚 Skryptów bash: $(find . -maxdepth 1 -name "*.sh" 2>/dev/null | wc -l)"
-        echo "  📁 Plików konfiguracyjnych: $(find monitoring -type f 2>/dev/null | wc -l)"
+        echo "  🐳 Dockerfile'ów: $DOCKERFILE_COUNT/5"
+        echo "  🐚 Skryptów bash: $SCRIPT_COUNT"
+        echo "  🐍 Skryptów Python: $PYTHON_COUNT"
         echo ""
         
         echo "🔍 PRZEPROWADZONE TESTY:"
@@ -312,6 +372,6 @@ jobs:
         echo "- ✅ Potwierdzenie działania CI/CD pipeline"
         echo "- ✅ Rzeczywista walidacja kodu (nie symulowana)"
         echo "- ✅ Gotowy raport wykonania"
-        echo "- ✅ Logi z rzeczywistymi wynikami testów"
+        echo "- ✅ Debug info z rzeczywistą strukturą plików"
         echo ""
         echo "========================================"
