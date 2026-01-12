@@ -5,7 +5,6 @@
 
 # Reports
 reports/
-*.json
 *.html
 *.pdf
 
