@@ -109,7 +109,7 @@ jobs:
         echo ""
         echo "🎉 Podstawowa struktura projektu jest POPRAWNA"
     
-    - name: "🐳 Analiza Dockerfile'ów (hadolint) - RZECZYWISTA"
+    - name: "🐳 Analiza Dockerfile'ów (hadolint) "
       run: |
         echo "=== ANALIZA DOCKERFILE'ÓW ==="
         
@@ -125,7 +125,7 @@ jobs:
         for app in nginx node-vuln-app python-vuln-app php-vuln-app vulnerable-db; do
           if [ -f "applications/$app/Dockerfile" ]; then
             echo "📄 $app/Dockerfile:"
-            # URUCHOM Z RZECZYWISTYM OUTPUTEM, NIE UKRYWAJ!
+            # URUCHOM Z Outputem
             if /tmp/hadolint "applications/$app/Dockerfile"; then
               echo "   ✅ Poprawny"
             else
@@ -143,7 +143,7 @@ jobs:
           echo "📊 Wszystkie Dockerfile'y przeszły analizę"
         fi
     
-    - name: "🐚 Analiza skryptów (shellcheck) - RZECZYWISTA"
+    - name: "🐚 Analiza skryptów (shellcheck) "
       run: |
         echo "=== ANALIZA SKRYPTÓW BASH ==="
         
