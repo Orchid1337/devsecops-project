@@ -125,7 +125,6 @@ jobs:
         for app in nginx node-vuln-app python-vuln-app php-vuln-app vulnerable-db; do
           if [ -f "applications/$app/Dockerfile" ]; then
             echo "📄 $app/Dockerfile:"
-            # URUCHOM Z Outputem
             if /tmp/hadolint "applications/$app/Dockerfile"; then
               echo "   ✅ Poprawny"
             else
@@ -162,7 +161,6 @@ jobs:
           local script="$1"
           if [ -f "$script" ]; then
             echo "📄 $script:"
-            # POKAŻ OUTPUT
             if shellcheck "$script"; then
               echo "   ✅ Poprawny"
             else
@@ -202,22 +200,18 @@ jobs:
         if [ -f "docker-compose.yaml" ]; then
           echo "🔍 Sprawdzam składnię docker-compose..."
           
-          # Instaluj docker-compose jeśli nie ma
           if ! command -v docker-compose &> /dev/null; then
             echo "📦 Instaluję docker-compose..."
             sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
           fi
           
-          # Waliduj
           if docker-compose -f docker-compose.yaml config > /dev/null 2>&1; then
             echo "✅ docker-compose.yaml ma poprawną składnię"
             
-            # Pokaż liczbę usług
             SERVICES=$(docker-compose -f docker-compose.yaml config --services | wc -l)
             echo "📊 Liczba zdefiniowanych usług: $SERVICES"
             
-            # Sprawdź czy jest Juice Shop
             if docker-compose -f docker-compose.yaml config --services | grep -q "juice-shop"; then
               echo "✅ OWASP Juice Shop jest w docker-compose"
             else
@@ -343,29 +337,31 @@ jobs:
           SCAN_CMD="bash scan.sh"
         fi
         
-        echo "### 🚀 Instrukcja uruchomienia:" >> raport.md
-        echo "" >> raport.md
-        echo "```bash" >> raport.md
-        echo "# 1. Uruchom całe środowisko DevSecOps" >> raport.md
-        echo "$START_CMD" >> raport.md
-        echo "" >> raport.md
-        echo "# 2. Wykonaj skan bezpieczeństwa 6 obrazów" >> raport.md
-        echo "$SCAN_CMD" >> raport.md
-        echo "```" >> raport.md
-        echo "" >> raport.md
-        echo "#### 🌐 Dostępne interfejsy:" >> raport.md
-        echo "" >> raport.md
-        echo "- **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)" >> raport.md
-        echo "- **Metryki Prometheus**: http://localhost:8083/metrics" >> raport.md
-        echo "- **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)" >> raport.md
-        echo "- **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432" >> raport.md
-        echo "" >> raport.md
-        
-        echo "---" >> raport.md
-        echo "**Wygenerowano automatycznie przez GitHub Actions**" >> raport.md
-        echo "**Repozytorium**: https://github.com/Orchid1337/devsecops-project" >> raport.md
-        echo "**Data wykonania**: $(date)" >> raport.md
-        
+        # 🔥 POPRAWKA - STABILNY BLOK MARKDOWN
+        cat <<EOF >> raport.md
+### 🚀 Instrukcja uruchomienia:
+
+\`\`\`bash
+# 1. Uruchom całe środowisko DevSecOps
+$START_CMD
+
+# 2. Wykonaj skan bezpieczeństwa 6 obrazów
+$SCAN_CMD
+\`\`\`
+
+#### 🌐 Dostępne interfejsy:
+
+- **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)
+- **Metryki Prometheus**: http://localhost:8083/metrics
+- **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)
+- **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432
+
+---
+**Wygenerowano automatycznie przez GitHub Actions**  
+**Repozytorium**: https://github.com/Orchid1337/devsecops-project  
+**Data wykonania**: $(date)
+EOF
+
         echo "✅ Raport utworzony: raport.md"
     
     - name: "📤 Prześlij artefakty"
@@ -423,3 +419,4 @@ jobs:
         echo "- ✅ Gotowy raport wykonania z metrykami"
         echo ""
         echo "=================================================="
+
