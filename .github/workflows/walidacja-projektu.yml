@@ -324,7 +324,7 @@ jobs:
             SCAN_CMD="bash scan.sh"
           fi
 
-          cat <<EOF >> raport.md
+          cat <<'EOF' >> raport.md
           ### 🚀 Instrukcja uruchomienia:
 
           ```bash
