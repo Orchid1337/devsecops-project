@@ -303,7 +303,7 @@ jobs:
           echo "4. **Walidacja docker-compose** - sprawdzenie poprawności konfiguracji orchestracji" >> raport.md
           echo "" >> raport.md
 
-          echo "### 🎓 Wnioski dla pracy inżynierskiej:" >> raport.md
+          echo "### 🎓 Wnioski dla Projektu:" >> raport.md
           echo "" >> raport.md
           echo "- ✅ **Kompleksowa architektura** - pełny stack DevSecOps" >> raport.md
           echo "- ✅ **Realistyczne testowanie** - mix własnych i zewnętrznych aplikacji" >> raport.md
@@ -397,7 +397,7 @@ jobs:
           echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
           echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
           echo ""
-          echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
+          echo "🚀 MATERIAŁY DOWODOWE DLA PROJEKTU:"
           echo "- ✅ Potwierdzenie działania CI/CD pipeline"
           echo "- ✅ Rzeczywiste wyniki walidacji kodu"
           echo "- ✅ Dokumentacja strategii testowania"
