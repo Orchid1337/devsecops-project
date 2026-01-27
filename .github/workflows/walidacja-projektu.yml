@@ -324,29 +324,29 @@ jobs:
             SCAN_CMD="bash scan.sh"
           fi
 
-          cat <<'EOF' >> raport.md
-          ### 🚀 Instrukcja uruchomienia:
+          cat <<EOF >> raport.md
+### 🚀 Instrukcja uruchomienia:
 
-          ```bash
-          # 1. Uruchom całe środowisko DevSecOps
-          $START_CMD
+\`\`\`bash
+# 1. Uruchom całe środowisko DevSecOps
+$START_CMD
 
-          # 2. Wykonaj skan bezpieczeństwa 6 obrazów
-          $SCAN_CMD
-          ```
+# 2. Wykonaj skan bezpieczeństwa 6 obrazów
+$SCAN_CMD
+\`\`\`
 
-          #### 🌐 Dostępne interfejsy:
+#### 🌐 Dostępne interfejsy:
 
-          - **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)
-          - **Metryki Prometheus**: http://localhost:8083/metrics
-          - **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)
-          - **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432
+- **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)
+- **Metryki Prometheus**: http://localhost:8083/metrics
+- **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)
+- **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432
 
-          ---
-          **Wygenerowano automatycznie przez GitHub Actions**  
-          **Repozytorium**: https://github.com/Orchid1337/devsecops-project  
-          **Data wykonania**: $(date)
-          EOF
+---
+**Wygenerowano automatycznie przez GitHub Actions**  
+**Repozytorium**: https://github.com/Orchid1337/devsecops-project  
+**Data wykonania**: $(date)
+EOF
 
           echo "✅ Raport utworzony: raport.md"
 
