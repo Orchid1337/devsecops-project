@@ -21,96 +21,102 @@ jobs:
           echo "=== STRUKTURA PROJEKTU ==="
           echo "Projekt DevSecOps - Praca Inżynierska"
           echo ""
-
+          
           echo "📂 Bieżący katalog: $(pwd)"
           echo ""
-
+          
           HAS_ERRORS=0
-
+          
           echo "📋 PLIKI KRYTYCZNE:"
-          if [ -f "docker-compose.yaml" ]; then
+          if [ -f "docker-compose.yaml" ]; then 
             echo "✅ docker-compose.yaml"
-          else
+          else 
             echo "❌ BRAK: docker-compose.yaml"
             HAS_ERRORS=1
           fi
-
-          if [ -f "README.md" ]; then
+          
+          if [ -f "README.md" ]; then 
             echo "✅ README.md"
-          else
+          else 
             echo "❌ BRAK: README.md"
             HAS_ERRORS=1
           fi
-
-          if [ -f "start.sh" ]; then
+          
+          if [ -f "start.sh" ]; then 
             echo "✅ start.sh"
             if [ ! -x "start.sh" ]; then
               echo "⚠️  Uwaga: start.sh nie jest wykonywalny (chmod +x start.sh)"
             fi
-          else
+          else 
             echo "❌ BRAK: start.sh"
             HAS_ERRORS=1
           fi
-
+          
           echo ""
           echo "📁 APLIKACJE (wymagane 5 WŁASNYCH):"
           APP_COUNT=0
-
+          
           for app in nginx node-vuln-app python-vuln-app php-vuln-app vulnerable-db; do
-            if [ -f "applications/$app/Dockerfile" ]; then
+            if [ -f "applications/$app/Dockerfile" ]; then 
               echo "✅ $app/Dockerfile"
               APP_COUNT=$((APP_COUNT + 1))
-            else
+            else 
               echo "❌ BRAK: $app/Dockerfile"
             fi
           done
-
+          
           if [ $APP_COUNT -lt 5 ]; then
             echo "⚠️  UWAGA: Tylko $APP_COUNT/5 własnych aplikacji (minimum 3 dla demonstracji)"
             if [ $APP_COUNT -lt 3 ]; then
               HAS_ERRORS=1
             fi
           fi
-
+          
+          echo ""
+          echo "🎯 STRATEGIA TESTOWANIA:"
+          echo "✅ 5 własnych aplikacji (budowane lokalnie z Dockerfile)"
+          echo "✅ 1 gotowy obraz OWASP Juice Shop (z Docker Hub)"
+          echo "📊 Razem: 6 obrazów do demonstracji skanera"
+          
           echo ""
           echo "🔍 NARZĘDZIA SKANOWANIA:"
-          if [ -f "scan.sh" ]; then
+          if [ -f "scan.sh" ]; then 
             echo "✅ scan.sh"
             if [ ! -x "scan.sh" ]; then
               echo "⚠️  Uwaga: scan.sh nie jest wykonywalny"
             fi
-          else
+          else 
             echo "❌ BRAK: scan.sh"
             HAS_ERRORS=1
           fi
-
-          if [ -f "scanners/trivy-metrics-exporter.py" ]; then
+          
+          if [ -f "scanners/trivy-metrics-exporter.py" ]; then 
             echo "✅ Trivy metrics exporter"
-          else
+          else 
             echo "⚠️  Brak eksportera metryk (ważne dla dashboardu)"
           fi
-
+          
           if [ $HAS_ERRORS -eq 1 ]; then
             echo ""
             echo "❌ BRAKUJE KRYTYCZNYCH PLIKÓW - PIPELINE FAILED"
             exit 1
           fi
-
+          
           echo ""
           echo "🎉 Podstawowa struktura projektu jest POPRAWNA"
 
       - name: "🐳 Analiza Dockerfile'ów (hadolint)"
         run: |
           echo "=== ANALIZA DOCKERFILE'ÓW ==="
-
+          
           curl -s -L -o /tmp/hadolint "https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64"
           chmod +x /tmp/hadolint
-
+          
           echo "🔍 Sprawdzam Dockerfile'e (pokazuję rzeczywiste błędy):"
           echo ""
-
+          
           DOCKER_ERRORS=0
-
+          
           for app in nginx node-vuln-app python-vuln-app php-vuln-app vulnerable-db; do
             if [ -f "applications/$app/Dockerfile" ]; then
               echo "📄 $app/Dockerfile:"
@@ -123,7 +129,7 @@ jobs:
               echo ""
             fi
           done
-
+          
           if [ $DOCKER_ERRORS -gt 0 ]; then
             echo "⚠️  UWAGA: Znaleziono błędy w $DOCKER_ERRORS Dockerfile'ach"
             echo "   (ale kontynuuję pipeline - w tym projekcie mogą być CELOWE podatności)"
@@ -134,14 +140,16 @@ jobs:
       - name: "🐚 Analiza skryptów (shellcheck)"
         run: |
           echo "=== ANALIZA SKRYPTÓW BASH ==="
+          
+          echo "📦 Instalacja shellcheck..."
           sudo apt-get update -qq
           sudo apt-get install -y shellcheck -qq
-
+          
           echo "🔍 Sprawdzam skrypty (pokazuję rzeczywiste ostrzeżenia):"
           echo ""
-
+          
           SCRIPT_ERRORS=0
-
+          
           check_script() {
             local script="$1"
             if [ -f "$script" ]; then
@@ -160,15 +168,15 @@ jobs:
             fi
             echo ""
           }
-
+          
           check_script "start.sh"
           check_script "scan.sh"
           check_script "clean-reports.sh"
-
+          
           if [ -f "scanners/trivy-scan.sh" ]; then
             check_script "scanners/trivy-scan.sh"
           fi
-
+          
           if [ $SCRIPT_ERRORS -gt 0 ]; then
             echo "⚠️  UWAGA: Znaleziono problemy w $SCRIPT_ERRORS skryptach"
             echo "   Popraw ostrzeżenia shellcheck przed wysłaniem pracy"
@@ -179,29 +187,30 @@ jobs:
       - name: "🔧 Walidacja docker-compose"
         run: |
           echo "=== WALIDACJA DOCKER-COMPOSE ==="
-
+          
           if [ -f "docker-compose.yaml" ]; then
             echo "🔍 Sprawdzam składnię docker-compose..."
-
+            
             if ! command -v docker-compose &> /dev/null; then
               echo "📦 Instaluję docker-compose..."
               sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
-
+            
             if docker-compose -f docker-compose.yaml config > /dev/null 2>&1; then
               echo "✅ docker-compose.yaml ma poprawną składnię"
               SERVICES=$(docker-compose -f docker-compose.yaml config --services | wc -l)
               echo "📊 Liczba zdefiniowanych usług: $SERVICES"
-
+              
               if docker-compose -f docker-compose.yaml config --services | grep -q "juice-shop"; then
                 echo "✅ OWASP Juice Shop jest w docker-compose"
               else
                 echo "⚠️  UWAGA: Brak Juice Shop w docker-compose (ale może być skanowany przez scan.sh)"
               fi
-
+              
             else
               echo "❌ docker-compose.yaml ma błędy składniowe"
+              echo "🔍 Szczegóły błędów:"
               docker-compose -f docker-compose.yaml config
               exit 1
             fi
@@ -249,7 +258,6 @@ jobs:
           echo "" >> raport.md
           echo "#### 1. 🏗️ **5 własnych aplikacji** (budowane lokalnie z Dockerfile):" >> raport.md
           echo "" >> raport.md
-
           if [ $DOCKERFILE_COUNT -gt 0 ]; then
             find applications -name "Dockerfile" -type f | sed 's|applications/||; s|/Dockerfile||' | while read app; do
               echo "   - **$app** - celowo podatna aplikacja" >> raport.md
@@ -257,12 +265,10 @@ jobs:
           else
             echo "   - ❌ Brak własnych aplikacji" >> raport.md
           fi
-
           echo "" >> raport.md
           echo "   **Cel**: Pokazać jak skanować **własny kod** w procesie CI/CD" >> raport.md
           echo "   **Metoda**: Dockerfile'e celowo zawierają 'złe praktyki' bezpieczeństwa" >> raport.md
           echo "" >> raport.md
-
           echo "#### 2. 📦 **1 gotowy obraz OWASP** (pobierany z Docker Hub):" >> raport.md
           echo "" >> raport.md
           echo "   - **OWASP Juice Shop** (bkimminich/juice-shop:latest)" >> raport.md
@@ -292,7 +298,7 @@ jobs:
           echo "### ✅ Przeprowadzone testy walidacyjne:" >> raport.md
           echo "" >> raport.md
           echo "1. **Walidacja struktury** - sprawdzenie kompletności projektu" >> raport.md
-          echo "2. **Analiza Dockerfile'ów z Hadolint** - rzeczywiste sprawdzenie zgodności z best practices" >> raport.md
+          echo "2. **Analiza Dockerfile'ów z Hadolint** - rzeczywiste sprawdzenie zgodności z best practices" >> raport.md  
           echo "3. **Analiza skryptów bash z ShellCheck** - rzeczywista walidacja składni i bezpieczeństwa" >> raport.md
           echo "4. **Walidacja docker-compose** - sprawdzenie poprawności konfiguracji orchestracji" >> raport.md
           echo "" >> raport.md
@@ -319,81 +325,83 @@ jobs:
           fi
 
           cat <<EOF >> raport.md
-### 🚀 Instrukcja uruchomienia:
+          ### 🚀 Instrukcja uruchomienia:
 
-```bash
-# 1. Uruchom całe środowisko DevSecOps
-$START_CMD
+          ```bash
+          # 1. Uruchom całe środowisko DevSecOps
+          $START_CMD
 
-# 2. Wykonaj skan bezpieczeństwa 6 obrazów
-$SCAN_CMD
-🌐 Dostępne interfejsy:
-Dashboard bezpieczeństwa: http://localhost:3002 (admin/admin)
+          # 2. Wykonaj skan bezpieczeństwa 6 obrazów
+          $SCAN_CMD
+          ```
 
-Metryki Prometheus: http://localhost:8083/metrics
+          #### 🌐 Dostępne interfejsy:
 
-Aplikacja testowa: http://localhost:3001 (OWASP Juice Shop)
+          - **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)
+          - **Metryki Prometheus**: http://localhost:8083/metrics
+          - **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)
+          - **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432
 
-Podatne aplikacje: localhost:8080, :3003, :5000, :8081, :5432
+          ---
+          **Wygenerowano automatycznie przez GitHub Actions**  
+          **Repozytorium**: https://github.com/Orchid1337/devsecops-project  
+          **Data wykonania**: $(date)
+          EOF
 
-Wygenerowano automatycznie przez GitHub Actions
-Repozytorium: https://github.com/Orchid1337/devsecops-project
-Data wykonania: $(date)
-EOF
+          echo "✅ Raport utworzony: raport.md"
 
-      echo "✅ Raport utworzony: raport.md"
+      - name: "📤 Prześlij artefakty"
+        uses: actions/upload-artifact@v4
+        with:
+          name: raport-walidacji-devsecops
+          path: raport.md
 
-  - name: "📤 Prześlij artefakty"
-    uses: actions/upload-artifact@v4
-    with:
-      name: raport-walidacji-devsecops
-      path: raport.md
+      - name: "🎉 Finalne podsumowanie"
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "           🎓 DEVSECOPS - PROJEKT INZYNIERSKI "
+          echo "=================================================="
+          echo ""
+          echo "✅ WALIDACJA ZAKOŃCZONA SUKCESEM"
+          echo ""
+          
+          DOCKERFILE_COUNT=0
+          if [ -d "applications" ]; then
+            DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
+          fi
+          
+          SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
+          
+          echo "📊 STRUKTURA PROJEKTU:"
+          echo "  🏗️  Własnych aplikacji: $DOCKERFILE_COUNT/5"
+          echo "  📦 Obrazów zewnętrznych: 1 (OWASP Juice Shop)"
+          echo "  🐚 Skryptów automatyzacji: $SCRIPT_COUNT"
+          echo "  📈 Razem obrazów do skanowania: $((DOCKERFILE_COUNT + 1))"
+          echo ""
+          
+          echo "🔍 PRZEPROWADZONE TESTY:"
+          echo "  1. ✅ Walidacja struktury projektu"
+          echo "  2. ✅ RZECZYWISTA analiza Dockerfile'ów (Hadolint)"  
+          echo "  3. ✅ RZECZYWISTA analiza skryptów (ShellCheck)"
+          echo "  4. ✅ Walidacja docker-compose.yml"
+          echo ""
+          
+          echo "🎯 KLUCZOWE ELEMENTY DEMONSTRACJI:"
+          echo "  • Skanowanie WŁASNYCH aplikacji (Dockerfile'e z celowymi podatnościami)"
+          echo "  • Skanowanie ZEWNĘTRZNYCH obrazów (OWASP Juice Shop - industry standard)"
+          echo "  • Dashboard bezpieczeństwa w czasie rzeczywistym (Grafana)"
+          echo "  • Automatyczny pipeline CI/CD (GitHub Actions)"
+          echo ""
+          
+          echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
+          echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
+          echo ""
+          echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
+          echo "- ✅ Potwierdzenie działania CI/CD pipeline"
+          echo "- ✅ Rzeczywiste wyniki walidacji kodu"
+          echo "- ✅ Dokumentacja strategii testowania"
+          echo "- ✅ Gotowy raport wykonania z metrykami"
+          echo ""
+          echo "=================================================="
 
-  - name: "🎉 Finalne podsumowanie"
-    run: |
-      echo ""
-      echo "=================================================="
-      echo "           🎓 DEVSECOPS - PROJEKT INZYNIERSKI "
-      echo "=================================================="
-      echo ""
-      echo "✅ WALIDACJA ZAKOŃCZONA SUKCESEM"
-      echo ""
-
-      DOCKERFILE_COUNT=0
-      if [ -d "applications" ]; then
-        DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
-      fi
-
-      SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
-
-      echo "📊 STRUKTURA PROJEKTU:"
-      echo "  🏗️  Własnych aplikacji: $DOCKERFILE_COUNT/5"
-      echo "  📦 Obrazów zewnętrznych: 1 (OWASP Juice Shop)"
-      echo "  🐚 Skryptów automatyzacji: $SCRIPT_COUNT"
-      echo "  📈 Razem obrazów do skanowania: $((DOCKERFILE_COUNT + 1))"
-      echo ""
-
-      echo "🔍 PRZEPROWADZONE TESTY:"
-      echo "  1. ✅ Walidacja struktury projektu"
-      echo "  2. ✅ RZECZYWISTA analiza Dockerfile'ów (Hadolint)"
-      echo "  3. ✅ RZECZYWISTA analiza skryptów (ShellCheck)"
-      echo "  4. ✅ Walidacja docker-compose.yml"
-      echo ""
-
-      echo "🎯 KLUCZOWE ELEMENTY DEMONSTRACJI:"
-      echo "  • Skanowanie WŁASNYCH aplikacji (Dockerfile'e z celowymi podatnościami)"
-      echo "  • Skanowanie ZEWNĘTRZNYCH obrazów (OWASP Juice Shop - industry standard)"
-      echo "  • Dashboard bezpieczeństwa w czasie rzeczywistym (Grafana)"
-      echo "  • Automatyczny pipeline CI/CD (GitHub Actions)"
-      echo ""
-
-      echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
-      echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
-      echo ""
-      echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
-      echo "- ✅ Potwierdzenie działania CI/CD pipeline"
-      echo "- ✅ Rzeczywiste wyniki walidacji kodu"
-      echo "- ✅ Dokumentacja strategii testowania"
-      echo "- ✅ Gotowy raport wykonania z metrykami"
-      echo ""
-      echo "=================================================="
