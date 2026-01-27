@@ -22,11 +22,9 @@ jobs:
         echo "Projekt DevSecOps - Praca Inżynierska"
         echo ""
         
-        # Debug - pokaż gdzie jesteśmy
         echo "📂 Bieżący katalog: $(pwd)"
         echo ""
         
-        # Flaga błędów
         HAS_ERRORS=0
         
         echo "📋 PLIKI KRYTYCZNE:"
@@ -46,7 +44,6 @@ jobs:
         
         if [ -f "start.sh" ]; then 
           echo "✅ start.sh"
-          # Sprawdź czy jest wykonywalny
           if [ ! -x "start.sh" ]; then
             echo "⚠️  Uwaga: start.sh nie jest wykonywalny (chmod +x start.sh)"
           fi
@@ -81,7 +78,6 @@ jobs:
         echo "✅ 1 gotowy obraz OWASP Juice Shop (z Docker Hub)"
         echo "📊 Razem: 6 obrazów do demonstracji skanera"
         
-        # Sprawdź czy są pliki skanowania
         echo ""
         echo "🔍 NARZĘDZIA SKANOWANIA:"
         if [ -f "scan.sh" ]; then 
@@ -109,11 +105,10 @@ jobs:
         echo ""
         echo "🎉 Podstawowa struktura projektu jest POPRAWNA"
     
-    - name: "🐳 Analiza Dockerfile'ów (hadolint) "
+    - name: "🐳 Analiza Dockerfile'ów (hadolint)"
       run: |
         echo "=== ANALIZA DOCKERFILE'ÓW ==="
         
-        # Pobierz hadolint
         curl -s -L -o /tmp/hadolint "https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64"
         chmod +x /tmp/hadolint
         
@@ -142,11 +137,10 @@ jobs:
           echo "📊 Wszystkie Dockerfile'y przeszły analizę"
         fi
     
-    - name: "🐚 Analiza skryptów (shellcheck) "
+    - name: "🐚 Analiza skryptów (shellcheck)"
       run: |
         echo "=== ANALIZA SKRYPTÓW BASH ==="
         
-        # Instaluj shellcheck
         echo "📦 Instalacja shellcheck..."
         sudo apt-get update -qq
         sudo apt-get install -y shellcheck -qq
@@ -156,7 +150,6 @@ jobs:
         
         SCRIPT_ERRORS=0
         
-        # Funkcja do sprawdzania skryptów
         check_script() {
           local script="$1"
           if [ -f "$script" ]; then
@@ -176,12 +169,10 @@ jobs:
           echo ""
         }
         
-        # Sprawdź główne skrypty
         check_script "start.sh"
         check_script "scan.sh"
         check_script "clean-reports.sh"
         
-        # Sprawdź dodatkowe skrypty
         if [ -f "scanners/trivy-scan.sh" ]; then
           check_script "scanners/trivy-scan.sh"
         fi
@@ -208,7 +199,6 @@ jobs:
           
           if docker-compose -f docker-compose.yaml config > /dev/null 2>&1; then
             echo "✅ docker-compose.yaml ma poprawną składnię"
-            
             SERVICES=$(docker-compose -f docker-compose.yaml config --services | wc -l)
             echo "📊 Liczba zdefiniowanych usług: $SERVICES"
             
@@ -245,7 +235,6 @@ jobs:
         echo "## 📅 Data wykonania: $(date)" >> raport.md
         echo "" >> raport.md
         
-        # Zbierz statystyki
         DOCKERFILE_COUNT=0
         if [ -d "applications" ]; then
           DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
@@ -291,7 +280,6 @@ jobs:
         echo "#### 📈 **RAZEM: 6 obrazów** do kompleksowej demonstracji DevSecOps" >> raport.md
         echo "" >> raport.md
         
-        # Lista znalezionych plików
         echo "### 📁 Znalezione pliki:" >> raport.md
         echo "" >> raport.md
         
@@ -324,7 +312,6 @@ jobs:
         echo "- ✅ **Industry standards** - użycie OWASP Juice Shop jako benchmark" >> raport.md
         echo "" >> raport.md
         
-        # Sprawdź czy start.sh i scan.sh istnieją
         if [ -f "start.sh" ]; then
           START_CMD="./start.sh"
         else
@@ -337,86 +324,82 @@ jobs:
           SCAN_CMD="bash scan.sh"
         fi
         
-        # 🔥 POPRAWKA - STABILNY BLOK MARKDOWN
         cat <<EOF >> raport.md
 ### 🚀 Instrukcja uruchomienia:
 
-\`\`\`bash
+```bash
 # 1. Uruchom całe środowisko DevSecOps
 $START_CMD
 
 # 2. Wykonaj skan bezpieczeństwa 6 obrazów
 $SCAN_CMD
-\`\`\`
+🌐 Dostępne interfejsy:
+Dashboard bezpieczeństwa: http://localhost:3002 (admin/admin)
 
-#### 🌐 Dostępne interfejsy:
+Metryki Prometheus: http://localhost:8083/metrics
 
-- **Dashboard bezpieczeństwa**: http://localhost:3002 (admin/admin)
-- **Metryki Prometheus**: http://localhost:8083/metrics
-- **Aplikacja testowa**: http://localhost:3001 (OWASP Juice Shop)
-- **Podatne aplikacje**: localhost:8080, :3003, :5000, :8081, :5432
+Aplikacja testowa: http://localhost:3001 (OWASP Juice Shop)
 
----
-**Wygenerowano automatycznie przez GitHub Actions**  
-**Repozytorium**: https://github.com/Orchid1337/devsecops-project  
-**Data wykonania**: $(date)
+Podatne aplikacje: localhost:8080, :3003, :5000, :8081, :5432
+
+Wygenerowano automatycznie przez GitHub Actions
+Repozytorium: https://github.com/Orchid1337/devsecops-project
+Data wykonania: $(date)
 EOF
 
-        echo "✅ Raport utworzony: raport.md"
-    
-    - name: "📤 Prześlij artefakty"
-      uses: actions/upload-artifact@v4
-      with:
-        name: raport-walidacji-devsecops
-        path: raport.md
-    
-    - name: "🎉 Finalne podsumowanie"
-      run: |
-        echo ""
-        echo "=================================================="
-        echo "           🎓 DEVSECOPS - PRACA INŻYNIERSKA"
-        echo "=================================================="
-        echo ""
-        echo "✅ WALIDACJA ZAKOŃCZONA SUKCESEM"
-        echo ""
-        
-        # Oblicz statystyki
-        DOCKERFILE_COUNT=0
-        if [ -d "applications" ]; then
-          DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
-        fi
-        
-        SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
-        
-        echo "📊 STRUKTURA PROJEKTU:"
-        echo "  🏗️  Własnych aplikacji: $DOCKERFILE_COUNT/5"
-        echo "  📦 Obrazów zewnętrznych: 1 (OWASP Juice Shop)"
-        echo "  🐚 Skryptów automatyzacji: $SCRIPT_COUNT"
-        echo "  📈 Razem obrazów do skanowania: $((DOCKERFILE_COUNT + 1))"
-        echo ""
-        
-        echo "🔍 PRZEPROWADZONE TESTY:"
-        echo "  1. ✅ Walidacja struktury projektu"
-        echo "  2. ✅ RZECZYWISTA analiza Dockerfile'ów (Hadolint)"  
-        echo "  3. ✅ RZECZYWISTA analiza skryptów (ShellCheck)"
-        echo "  4. ✅ Walidacja docker-compose.yml"
-        echo ""
-        
-        echo "🎯 KLUCZOWE ELEMENTY DEMONSTRACJI:"
-        echo "  • Skanowanie WŁASNYCH aplikacji (Dockerfile'e z celowymi podatnościami)"
-        echo "  • Skanowanie ZEWNĘTRZNYCH obrazów (OWASP Juice Shop - industry standard)"
-        echo "  • Dashboard bezpieczeństwa w czasie rzeczywistym (Grafana)"
-        echo "  • Automatyczny pipeline CI/CD (GitHub Actions)"
-        echo ""
-        
-        echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
-        echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
-        echo ""
-        echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
-        echo "- ✅ Potwierdzenie działania CI/CD pipeline"
-        echo "- ✅ Rzeczywiste wyniki walidacji kodu"
-        echo "- ✅ Dokumentacja strategii testowania"
-        echo "- ✅ Gotowy raport wykonania z metrykami"
-        echo ""
-        echo "=================================================="
+    echo "✅ Raport utworzony: raport.md"
 
+- name: "📤 Prześlij artefakty"
+  uses: actions/upload-artifact@v4
+  with:
+    name: raport-walidacji-devsecops
+    path: raport.md
+
+- name: "🎉 Finalne podsumowanie"
+  run: |
+    echo ""
+    echo "=================================================="
+    echo "           🎓 DEVSECOPS - PRACA INŻYNIERSKA"
+    echo "=================================================="
+    echo ""
+    echo "✅ WALIDACJA ZAKOŃCZONA SUKCESEM"
+    echo ""
+    
+    DOCKERFILE_COUNT=0
+    if [ -d "applications" ]; then
+      DOCKERFILE_COUNT=$(find applications -name "Dockerfile" -type f | wc -l)
+    fi
+    
+    SCRIPT_COUNT=$(find . -maxdepth 2 -name "*.sh" -type f | wc -l)
+    
+    echo "📊 STRUKTURA PROJEKTU:"
+    echo "  🏗️  Własnych aplikacji: $DOCKERFILE_COUNT/5"
+    echo "  📦 Obrazów zewnętrznych: 1 (OWASP Juice Shop)"
+    echo "  🐚 Skryptów automatyzacji: $SCRIPT_COUNT"
+    echo "  📈 Razem obrazów do skanowania: $((DOCKERFILE_COUNT + 1))"
+    echo ""
+    
+    echo "🔍 PRZEPROWADZONE TESTY:"
+    echo "  1. ✅ Walidacja struktury projektu"
+    echo "  2. ✅ RZECZYWISTA analiza Dockerfile'ów (Hadolint)"  
+    echo "  3. ✅ RZECZYWISTA analiza skryptów (ShellCheck)"
+    echo "  4. ✅ Walidacja docker-compose.yml"
+    echo ""
+    
+    echo "🎯 KLUCZOWE ELEMENTY DEMONSTRACJI:"
+    echo "  • Skanowanie WŁASNYCH aplikacji (Dockerfile'e z celowymi podatnościami)"
+    echo "  • Skanowanie ZEWNĘTRZNYCH obrazów (OWASP Juice Shop - industry standard)"
+    echo "  • Dashboard bezpieczeństwa w czasie rzeczywistym (Grafana)"
+    echo "  • Automatyczny pipeline CI/CD (GitHub Actions)"
+    echo ""
+    
+    echo "📎 Pobierz szczegółowy raport z zakładki 'Artifacts'"
+    echo "🔗 https://github.com/Orchid1337/devsecops-project/actions"
+    echo ""
+    echo "🚀 MATERIAŁY DOWODOWE DLA PRACY:"
+    echo "- ✅ Potwierdzenie działania CI/CD pipeline"
+    echo "- ✅ Rzeczywiste wyniki walidacji kodu"
+    echo "- ✅ Dokumentacja strategii testowania"
+    echo "- ✅ Gotowy raport wykonania z metrykami"
+    echo ""
+    echo "=================================================="
